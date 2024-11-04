@@ -98,8 +98,8 @@ class HomeScreen(BaseScreen):
         if file_path:
             messagebox.showinfo("Arquivo Selecionado", "Arquivo anexado com sucesso!")
             self.caminho_arquivo.set(file_path)
-            if self.acao_var.get() == "novo":
-                print("novo")
+            if self.acao_var.get() == "nova":
+                print("nova")
             else:
                 print("existente")
 
@@ -126,11 +126,12 @@ class HomeScreen(BaseScreen):
     
     def ler_requisicoes_existentes(self, diretorio, prefixo):
         try:
+            print(prefixo)
             #Lista todos os diretórios no caminho especificado
             pastas = [nome for nome in os.listdir(diretorio) if os.path.isdir(os.path.join(diretorio, nome))]
 
             #Regex para extrair o número sequencial da pasta no formato prefixo-###
-            padrao = re.compile(f"{prefixo}-(\d{{3}})")
+            padrao = re.compile(rf"{prefixo}-(\d{{3}})")
 
             #Lista para armazenar os números já utilizados
             numeros_utilizados = []
@@ -159,22 +160,23 @@ class HomeScreen(BaseScreen):
     def copiar_arquivo(self):
         try:
             # Caminho base da pasta "Documents" do usuário
-            path = "/Users/daniellucas/Library/Mobile Documents/com~apple~CloudDocs/All Energy/Programa RCO/"
+            path = "C:\\Users\\daniel.murta\\All Energy\\Apropriação de Horas - Documentos\\Testes"
             caminho_base = os.path.expanduser(path)
         
             # Caminho de destino específico para o projeto
             caminho_destino = os.path.join(caminho_base, self.projeto.get())
         
-            if self.acao_var.get() == "novo":
-                caminho_nova_pasta = path + self.requisicoes_existentes(path)
+            if self.acao_var.get() == "nova":
+                caminho_nova_pasta = os.path.join(caminho_destino, self.requisicoes_existentes(caminho_destino))
                 # Cria o diretório de destino se ele não existir
+                print("CAMINHO DA NOVA PASTA:" + caminho_nova_pasta)
                 os.makedirs(caminho_nova_pasta, exist_ok=True)
         
             # Verifica se o arquivo de origem existe
             if os.path.exists(self.caminho_arquivo.get()):
                 # Copia o arquivo
-                shutil.copy(self.caminho_arquivo.get(), caminho_destino)
-                print(f"Arquivo copiado com sucesso para o caminho: {caminho_destino}")
+                shutil.copy(self.caminho_arquivo.get(), caminho_nova_pasta)
+                print(f"Arquivo copiado com sucesso para o caminho: {caminho_nova_pasta}")
             else:
                 print("Arquivo de origem não encontrado!")
         except Exception as e:
