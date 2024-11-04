@@ -1,6 +1,7 @@
 import tkinter as tk
 import shutil
 import os
+import re
 from tkinter import ttk
 from tkinter import messagebox, filedialog
 from Screens.Base import BaseScreen
@@ -111,12 +112,48 @@ class HomeScreen(BaseScreen):
         print("Acao: " + self.acao_var.get())
         print("Projeto: " + self.projeto.get())
 
-    def ler_requisicoes_existentes(self):
+    def requisicoes_existentes(self, diretorio):
         print("Fazer a leitura das pastas de requisições")
         if self.tipo_var.get() == "RCO":
             print("RCO")
+            prefixo = self.projeto.get()[:4] + "-" + self.tipo_var.get() #Número do codigo de projeto + RCO EX: 1804-RCO
+            self.ler_requisicoes_existentes(diretorio, prefixo)
         else:
             print("RSE")
+            prefixo = self.projeto.get()[:4] + "-" + self.tipo_var.get() #Número do codigo de projeto + RSE EX: 1804-RSE
+            self.ler_requisicoes_existentes(diretorio, prefixo)
+    
+    def ler_requisicoes_existentes(self, diretorio, prefixo):
+        try:
+            #Lista todos os diretórios no caminho especificado
+            pastas = [nome for nome in os.listdir(diretorio) if os.path.isdir(os.path.join(diretorio, nome))]
+
+            #Regex para extrair o número sequencial da pasta no formato prefixo-###
+            padrao = re.compile(f"{prefixo}-(\d{{3}})")
+
+            #Lista para armazenar os números já utilizados
+            numeros_utilizados = []
+
+            for pasta in pastas:
+                correspondencia = padrao.match(pasta)
+                if correspondencia:
+                    numero = int(correspondencia.group(1))
+                    numeros_utilizados.append(numero)
+            
+            #Determina o proximo numero da sequencia
+            if numeros_utilizados:
+                proximo_numero = max(numeros_utilizados) + 1
+            else:
+                proximo_numero = 0
+            
+            #Formata o proximo numero com tres digitos
+            proxima_pasta = f"{prefixo}-{proximo_numero:03d} - Novo Item"
+            print(f"Próxima pasta sugerida: {proxima_pasta}")
+            return proxima_pasta
+        
+        except Exception as e:
+            print(f"Ocorreu um erro: {e}")
+
     
     def copiar_arquivo(self):
         try:
