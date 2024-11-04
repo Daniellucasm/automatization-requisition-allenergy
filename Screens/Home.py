@@ -117,11 +117,12 @@ class HomeScreen(BaseScreen):
         if self.tipo_var.get() == "RCO":
             print("RCO")
             prefixo = self.projeto.get()[:4] + "-" + self.tipo_var.get() #Número do codigo de projeto + RCO EX: 1804-RCO
-            self.ler_requisicoes_existentes(diretorio, prefixo)
+            nova_pasta = self.ler_requisicoes_existentes(diretorio, prefixo)
         else:
             print("RSE")
             prefixo = self.projeto.get()[:4] + "-" + self.tipo_var.get() #Número do codigo de projeto + RSE EX: 1804-RSE
-            self.ler_requisicoes_existentes(diretorio, prefixo)
+            nova_pasta = self.ler_requisicoes_existentes(diretorio, prefixo)
+        return nova_pasta
     
     def ler_requisicoes_existentes(self, diretorio, prefixo):
         try:
@@ -158,13 +159,16 @@ class HomeScreen(BaseScreen):
     def copiar_arquivo(self):
         try:
             # Caminho base da pasta "Documents" do usuário
-            caminho_base = os.path.expanduser("/Users/daniellucas/Library/Mobile Documents/com~apple~CloudDocs/All Energy/Programa RCO/")
+            path = "/Users/daniellucas/Library/Mobile Documents/com~apple~CloudDocs/All Energy/Programa RCO/"
+            caminho_base = os.path.expanduser(path)
         
             # Caminho de destino específico para o projeto
             caminho_destino = os.path.join(caminho_base, self.projeto.get())
         
-            # Cria o diretório de destino se ele não existir
-            os.makedirs(caminho_destino, exist_ok=True)
+            if self.acao_var.get() == "novo":
+                caminho_nova_pasta = path + self.requisicoes_existentes(path)
+                # Cria o diretório de destino se ele não existir
+                os.makedirs(caminho_nova_pasta, exist_ok=True)
         
             # Verifica se o arquivo de origem existe
             if os.path.exists(self.caminho_arquivo.get()):
