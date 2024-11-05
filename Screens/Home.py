@@ -3,7 +3,7 @@ import shutil
 import os
 import re
 from tkinter import ttk
-from tkinter import messagebox, filedialog
+from tkinter import messagebox, filedialog, simpledialog
 from Screens.Base import BaseScreen
 
 
@@ -39,7 +39,7 @@ class HomeScreen(BaseScreen):
                                        command=lambda: self.atualizar_opcoes("nova"))
         button_new_request.pack(pady=10)
 
-        button_update_request = tk.Button(opcoes_frame, text="Utilizar Uma Requisição Existente",
+        button_update_request = tk.Button(opcoes_frame, text="Editar Requisição Existente",
                                           command=lambda: self.atualizar_opcoes("existente"))
         button_update_request.pack(pady=10)
 
@@ -116,24 +116,24 @@ class HomeScreen(BaseScreen):
         print("Fazer a leitura das pastas de requisições")
         if self.tipo_var.get() == "RCO":
             print("RCO")
-            prefixo = self.projeto.get()[:4] + "-" + self.tipo_var.get() #Número do codigo de projeto + RCO EX: 1804-RCO
+            prefixo = self.projeto.get()[:4] + "-" + self.tipo_var.get()  # Número do código de projeto + RCO EX: 1804-RCO
             nova_pasta = self.ler_requisicoes_existentes(diretorio, prefixo)
         else:
             print("RSE")
-            prefixo = self.projeto.get()[:4] + "-" + self.tipo_var.get() #Número do codigo de projeto + RSE EX: 1804-RSE
+            prefixo = self.projeto.get()[:4] + "-" + self.tipo_var.get()  # Número do código de projeto + RSE EX: 1804-RSE
             nova_pasta = self.ler_requisicoes_existentes(diretorio, prefixo)
         return nova_pasta
-    
+
     def ler_requisicoes_existentes(self, diretorio, prefixo):
         try:
             print(prefixo)
-            #Lista todos os diretórios no caminho especificado
+            # Lista todos os diretórios no caminho especificado
             pastas = [nome for nome in os.listdir(diretorio) if os.path.isdir(os.path.join(diretorio, nome))]
 
-            #Regex para extrair o número sequencial da pasta no formato prefixo-###
+            # Regex para extrair o número sequencial da pasta no formato prefixo-###
             padrao = re.compile(rf"{prefixo}-(\d{{3}})")
 
-            #Lista para armazenar os números já utilizados
+            # Lista para armazenar os números já utilizados
             numeros_utilizados = []
 
             for pasta in pastas:
@@ -141,26 +141,39 @@ class HomeScreen(BaseScreen):
                 if correspondencia:
                     numero = int(correspondencia.group(1))
                     numeros_utilizados.append(numero)
-            
-            #Determina o proximo numero da sequencia
+
+            # Determina o próximo número da sequência
             if numeros_utilizados:
                 proximo_numero = max(numeros_utilizados) + 1
             else:
                 proximo_numero = 0
-            
-            #Formata o proximo numero com tres digitos
-            proxima_pasta = f"{prefixo}-{proximo_numero:03d} - Novo Item"
+
+            # Abre uma janela para o usuário inserir um nome
+            nome_personalizado = self.obter_nome_personalizado()
+            if not nome_personalizado:
+                return None  # Se o usuário cancelar, retorna None
+
+            # Formata o próximo número com três dígitos e o nome personalizado
+            proxima_pasta = f"{prefixo}-{proximo_numero:03d} - {nome_personalizado}"
             print(f"Próxima pasta sugerida: {proxima_pasta}")
             return proxima_pasta
-        
+
         except Exception as e:
             print(f"Ocorreu um erro: {e}")
 
-    
+    def obter_nome_personalizado(self):
+        # Abre uma janela de diálogo para o usuário inserir o nome
+        nome_personalizado = simpledialog.askstring("Nome da Nova Pasta", "Digite um nome para a nova pasta:")
+        if not nome_personalizado:
+            messagebox.showinfo("Atenção", "Nenhum nome foi inserido. Operação cancelada.")
+        return nome_personalizado
+
     def copiar_arquivo(self):
         try:
             # Caminho base da pasta "Documents" do usuário
-            path = "C:\\Users\\daniel.murta\\All Energy\\Apropriação de Horas - Documentos\\Testes"
+            path = "/Users/daniellucas/Library/Mobile Documents/com~apple~CloudDocs/All Energy/"
+            #/Users/daniellucas/Library/Mobile Documents/com~apple~CloudDocs/All Energy/
+            #C:\\Users\\daniel.murta\\All Energy\\Apropriação de Horas - Documentos\\Testes
             caminho_base = os.path.expanduser(path)
         
             # Caminho de destino específico para o projeto
@@ -168,6 +181,8 @@ class HomeScreen(BaseScreen):
         
             if self.acao_var.get() == "nova":
                 caminho_nova_pasta = os.path.join(caminho_destino, self.requisicoes_existentes(caminho_destino))
+                if not caminho_nova_pasta:  # Verifica se o usuário cancelou a operação
+                    return
                 # Cria o diretório de destino se ele não existir
                 print("CAMINHO DA NOVA PASTA:" + caminho_nova_pasta)
                 os.makedirs(caminho_nova_pasta, exist_ok=True)
