@@ -163,7 +163,7 @@ class HomeScreen(BaseScreen):
 
     def obter_nome_personalizado(self):
         # Abre uma janela de diálogo para o usuário inserir o nome
-        nome_personalizado = simpledialog.askstring("Nome da Nova Pasta", "Digite um nome para a nova pasta:")
+        nome_personalizado = simpledialog.askstring("Nome da Nova Pasta", "Digite um nome para a nova pasta:")      
         if not nome_personalizado:
             messagebox.showinfo("Atenção", "Nenhum nome foi inserido. Operação cancelada.")
         return nome_personalizado
@@ -178,34 +178,42 @@ class HomeScreen(BaseScreen):
 
             # Caminho de destino específico para o projeto
             caminho_destino = os.path.join(caminho_base, self.projeto.get())
+            caminho_destino_engenharia = os.path.join(caminho_destino, "Engenharia")
+            caminho_destino_suprimentos = os.path.join(caminho_destino, "Suprimentos")
 
             if self.acao_var.get() == "nova":
                 # Gera o nome da nova pasta
-                nome_nova_pasta = self.requisicoes_existentes(caminho_destino)
+                nome_nova_pasta = self.requisicoes_existentes(caminho_destino_engenharia) 
                 if not nome_nova_pasta:  # Verifica se o usuário cancelou a operação
                     return
                 
-                caminho_nova_pasta = os.path.join(caminho_destino, nome_nova_pasta)
-                os.makedirs(caminho_nova_pasta, exist_ok=True)
+                caminho_nova_pasta_engenharia = os.path.join(caminho_destino_engenharia, nome_nova_pasta)
+                caminho_nova_pasta_suprimentos = os.path.join(caminho_destino_suprimentos, nome_nova_pasta)
+                os.makedirs(caminho_nova_pasta_engenharia, exist_ok=True)
+                os.makedirs(caminho_nova_pasta_suprimentos, exist_ok=True)
                 # Define o novo nome do arquivo com base no nome da nova pasta
                 nome_arquivo_novo = nome_nova_pasta + os.path.splitext(self.caminho_arquivo.get())[1]
-                caminho_arquivo_destino = os.path.join(caminho_nova_pasta, nome_arquivo_novo)
+                caminho_arquivo_destino_engenharia = os.path.join(caminho_nova_pasta_engenharia, nome_arquivo_novo)
+                caminho_arquivo_destino_suprimentos = os.path.join(caminho_nova_pasta_suprimentos, nome_arquivo_novo)
 
             else:
                 # Obtém o nome do arquivo original
                 nome_arquivo_original = os.path.basename(self.caminho_arquivo.get())
                 # Define o caminho da pasta existente onde o arquivo será copiado
-                caminho_pasta_existente = os.path.join(caminho_destino, nome_arquivo_original.split(".")[0])
-                caminho_arquivo_destino = os.path.join(caminho_pasta_existente, nome_arquivo_original)
+                caminho_pasta_existente_engenharia = os.path.join(caminho_destino_engenharia, nome_arquivo_original.split(".")[0])
+                caminho_pasta_existente_suprimentos = os.path.join(caminho_destino_suprimentos, nome_arquivo_original.split(".")[0])
+                caminho_arquivo_destino_engenharia = os.path.join(caminho_pasta_existente_engenharia, nome_arquivo_original)
+                caminho_arquivo_destino_suprimentos = os.path.join(caminho_pasta_existente_suprimentos, nome_arquivo_original)
 
 
             # Verifica se o arquivo de origem existe
             if os.path.exists(self.caminho_arquivo.get()):
                 # Copia o arquivo e renomeia
-                shutil.copy(self.caminho_arquivo.get(), caminho_arquivo_destino)
-                print(f"Arquivo copiado com sucesso para o caminho: {caminho_arquivo_destino}")
+                shutil.copy(self.caminho_arquivo.get(), caminho_arquivo_destino_engenharia)
+                shutil.copy(self.caminho_arquivo.get(), caminho_arquivo_destino_suprimentos)
+                messagebox.showinfo("Atenção", "Arquivo copiado com sucesso")
             else:
-                print("Arquivo de origem não encontrado!")
+                messagebox.showinfo("Atenção", "Arquivo não foi copiado!")
         except Exception as e:
             print(f"Ocorreu um erro: {e}")
 
