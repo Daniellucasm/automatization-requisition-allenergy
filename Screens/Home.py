@@ -12,85 +12,100 @@ class HomeScreen(BaseScreen):
     def __init__(self, manager, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # -----------------------------
-        #       Configurações
-        # -----------------------------
+        # Configurações da janela
         self.title("Programa Requisição")
-        self.geometry("400x300")
-        #self.configure(bg='grey')
+        self.geometry("450x350")
 
-        # ---------------------------
-        #        Componentes
-        # ---------------------------
-        label = tk.Label(self, text="Menu Requisição", font=("Helvetica", 20), pady=20) #background="grey"
+        # Label do título
+        label = tk.Label(self, text="Menu Requisição", font=("Helvetica", 20), pady=20)
         label.pack()
 
-        # Variáveis para armazenar a ação selecionada (Criar Nova ou Usar Existente), tipo de requisição e projeto
+        # Variáveis para armazenar as escolhas do usuário
         self.acao_var = tk.StringVar(value="")
         self.tipo_var = tk.StringVar(value="")
         self.projeto = tk.StringVar(value="")
+        self.revisao = tk.StringVar(value="")
         self.caminho_arquivo = tk.StringVar(value="")
 
         # Frame principal com botões de seleção de requisição
-        opcoes_frame = tk.Frame(self)#bg='gray'
+        opcoes_frame = tk.Frame(self)
         opcoes_frame.pack(fill="both", padx=10, pady=10)
 
+        # Botões para criar nova requisição ou editar existente
         button_new_request = tk.Button(opcoes_frame, text="Criar Uma Nova Requisição",
-                                       command=lambda: self.atualizar_opcoes("nova"))
+                                    command=lambda: self.atualizar_opcoes("nova"))
         button_new_request.pack(pady=10)
 
         button_update_request = tk.Button(opcoes_frame, text="Editar Requisição Existente",
-                                          command=lambda: self.atualizar_opcoes("existente"))
+                                        command=lambda: self.atualizar_opcoes("existente"))
         button_update_request.pack(pady=10)
 
-        self.projeto_combox_frame = tk.Frame(self)
-        self.projeto_combox_frame.columnconfigure(0, weight=1)
+        # Frame horizontal para projeto e revisão
+        self.projeto_revisao_frame = tk.Frame(self)
 
-        #Combox para listar projetos
-        self.projeto_combobox = ttk.Combobox(self.projeto_combox_frame, values=self.projetos, width=30)
-        self.projeto_combobox.pack(pady=5)
+        # Combobox para projetos
+        self.projeto_combobox = ttk.Combobox(self.projeto_revisao_frame, values=self.projetos, width=30)
+        self.projeto_combobox.grid(row=0, column=0, padx=5, pady=5)
         self.projeto_combobox.bind("<<ComboboxSelected>>", self.atualizar_projeto)
 
+        # Combobox para revisões (inicialmente oculta)
+        self.lista_revisao = list(range(20))
+        self.revisao_combobox = ttk.Combobox(self.projeto_revisao_frame, values=self.lista_revisao, width=5)
+        self.revisao_combobox.grid(row=0, column=1, padx=5, pady=5)
+        self.revisao_combobox.bind("<<ComboboxSelected>>", self.atualizar_revisao)
+
         # Frame para os botões de tipo de requisição (RCO ou RSE)
-        self.tipo_requisicao_frame = tk.Frame(self) #bg='gray'
-        # Configurar o frame para centralizar os botões
+        self.tipo_requisicao_frame = tk.Frame(self)
         self.tipo_requisicao_frame.columnconfigure(1, weight=1)
         self.tipo_requisicao_frame.columnconfigure(2, weight=1)
 
-        # Botão para selecionar RCO
-        self.rco_btn = ttk.Button(self.tipo_requisicao_frame, text="RCO", command=lambda: self.selecionar_arquivo("RCO")
-                                                                        if self.projeto.get() != "" 
-                                                                        else messagebox.showinfo("Projeto não Selecionado", "Escolher um projeto antes de gerar requisição!"))
-        self.rco_btn.grid(row=0, column=1, padx=20, sticky="ew")  # "ew" para expandir horizontalmente
+        # Botões para RCO e RSE
+        self.rco_btn = ttk.Button(self.tipo_requisicao_frame, text="RCO", 
+                                command=lambda: self.selecionar_arquivo("RCO") if self.projeto.get() else messagebox.showinfo("Projeto não Selecionado", "Escolher um projeto antes de gerar requisição!"))
+        self.rco_btn.grid(row=0, column=1, padx=20, sticky="ew")
 
-        # Botão para selecionar RSE
-        self.rse_btn = ttk.Button(self.tipo_requisicao_frame, text="RSE", command=lambda: self.selecionar_arquivo("RSE") 
-                                                                        if self.projeto.get() != "" 
-                                                                        else messagebox.showinfo("Projeto não Selecionado", "Escolher um projeto antes de gerar requisição!"))
-        self.rse_btn.grid(row=0, column=2, padx=20, sticky="ew")  # "ew" para expandir horizontalmente
+        self.rse_btn = ttk.Button(self.tipo_requisicao_frame, text="RSE", 
+                                command=lambda: self.selecionar_arquivo("RSE") if self.projeto.get() else messagebox.showinfo("Projeto não Selecionado", "Escolher um projeto antes de gerar requisição!"))
+        self.rse_btn.grid(row=0, column=2, padx=20, sticky="ew")
+
 
     def atualizar_projeto(self, event):
         self.projeto.set(self.projeto_combobox.get()) 
+
+    def atualizar_revisao(self, event):
+        self.revisao.set(self.revisao_combobox.get()) 
           
     def atualizar_opcoes(self, acao):
         """ Atualiza a interface para mostrar os botões de seleção de RCO ou RSE com base na ação selecionada """
         self.acao_var.set(acao)
 
-        # Exibe o frame para seleção de RCO ou RSE dependendo da ação
         if acao == "nova":
-            self.projeto_combox_frame.pack()
+            # Exibe apenas o frame de projeto para nova requisição e oculta a revisão
+            self.projeto_revisao_frame.pack(padx=10, pady=10)
+            self.revisao_combobox.grid_remove()  # Oculta a combobox de revisão
             self.tipo_requisicao_frame.pack(fill="x", padx=20, pady=10)
+
         elif acao == "existente":
-            self.projeto_combox_frame.pack()
+            # Exibe o frame com projeto e revisão para edição de requisição existente
+            self.projeto_revisao_frame.pack(padx=10, pady=10)
+            self.revisao_combobox.grid()  # Exibe a combobox de revisão
             self.tipo_requisicao_frame.pack(fill="x", padx=20, pady=10)
+
         else:
-            self.projeto_combox_frame.pack_forget()
+            # Oculta todos os frames caso nenhuma das opções seja selecionada
+            self.projeto_revisao_frame.pack_forget()
             self.tipo_requisicao_frame.pack_forget()
 
     def selecionar_arquivo(self, tipo):
         """ Abre uma janela de diálogo para selecionar o arquivo .xlsx """
         self.tipo_var.set(tipo)
+        print("REVISAO: ", self.revisao.get())
 
+        if self.acao_var.get() == "existente":
+            if self.revisao.get() == "":
+                messagebox.showinfo("Revisão não selecionada", "Revisão não foi selecionada")
+                return
+ 
         file_path = filedialog.askopenfilename(
             title="Selecione um Arquivo Excel",
             filetypes=[("Arquivos Excel", "*.xlsx"), ["Arquivos Excel", "*.xls"]])
