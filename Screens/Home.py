@@ -29,6 +29,7 @@ class HomeScreen(BaseScreen):
         self.acao_var = tk.StringVar(value="")
         self.tipo_var = tk.StringVar(value="")
         self.projeto = tk.StringVar(value="")
+        self.revisao = tk.StringVar(value="")
         self.caminho_arquivo = tk.StringVar(value="")
 
         # Frame principal com botões de seleção de requisição
@@ -98,28 +99,17 @@ class HomeScreen(BaseScreen):
         if file_path:
             messagebox.showinfo("Arquivo Selecionado", "Arquivo anexado com sucesso!")
             self.caminho_arquivo.set(file_path)
-            if self.acao_var.get() == "nova":
-                print("nova")
-            else:
-                print("existente")
-
             self.copiar_arquivo()
         else:
             messagebox.showinfo("Arquivo não selecionado", "Arquivo não foi anexado")
         
-        print(self.caminho_arquivo.get())
-        print("Tipo: " + self.tipo_var.get())
-        print("Acao: " + self.acao_var.get())
-        print("Projeto: " + self.projeto.get())
 
     def requisicoes_existentes(self, diretorio):
         print("Fazer a leitura das pastas de requisições")
         if self.tipo_var.get() == "RCO":
-            print("RCO")
             prefixo = self.projeto.get()[:4] + "-" + self.tipo_var.get()  # Número do código de projeto + RCO EX: 1804-RCO
             nova_pasta = self.ler_requisicoes_existentes(diretorio, prefixo)
         else:
-            print("RSE")
             prefixo = self.projeto.get()[:4] + "-" + self.tipo_var.get()  # Número do código de projeto + RSE EX: 1804-RSE
             nova_pasta = self.ler_requisicoes_existentes(diretorio, prefixo)
         return nova_pasta
@@ -167,6 +157,43 @@ class HomeScreen(BaseScreen):
         if not nome_personalizado:
             messagebox.showinfo("Atenção", "Nenhum nome foi inserido. Operação cancelada.")
         return nome_personalizado
+    
+    def obter_proxima_revisao(self, caminho_pasta, prefixo):
+        # Expressão regular para capturar o prefixo e a revisão
+        padrao = re.compile(rf"^({prefixo})(?:.*-R(\d+))?")
+        
+        # Variável para armazenar a maior revisão encontrada
+        maior_revisao = -1
+        
+        # Percorre todos os arquivos na pasta
+        for arquivo in os.listdir(caminho_pasta):
+            match = padrao.match(arquivo)
+            if match:
+                # Captura o número da revisão (se existir)
+                revisao_atual = match.group(2)
+                
+                if revisao_atual is not None:
+                    maior_revisao = max(maior_revisao, int(revisao_atual))
+        
+        # Incrementa a maior revisão encontrada
+        nova_revisao = maior_revisao + 1
+        
+        # Retorna o novo nome do arquivo com a próxima revisão
+        novo_nome_arquivo = f"{prefixo}-R{nova_revisao}"
+        return novo_nome_arquivo
+        
+    def encontrar_pasta_por_prefixo(self, diretorio_base, prefixo):
+        try:
+            pastas = [pasta for pasta in os.listdir(diretorio_base) if os.path.isdir(os.path.join(diretorio_base, pasta))]
+
+            for pasta in pastas:
+                if pasta.startswith(prefixo):
+                    return os.path.join(diretorio_base, pasta)
+                
+            messagebox.showinfo("Pasta não encontrada", f"Nenhuma pasta encontrada com o prefixo: {prefixo}")
+        except Exception as e:
+            print(f"Ocorreu um erro: {e}")
+            return None
 
     def copiar_arquivo(self):
         try:
@@ -178,8 +205,8 @@ class HomeScreen(BaseScreen):
 
             # Caminho de destino específico para o projeto
             caminho_destino = os.path.join(caminho_base, self.projeto.get())
-            caminho_destino_engenharia = os.path.join(caminho_destino, "Engenharia")
-            caminho_destino_suprimentos = os.path.join(caminho_destino, "Suprimentos")
+            caminho_destino_engenharia = os.path.join(caminho_destino, "Requisicao/Engenharia")
+            caminho_destino_suprimentos = os.path.join(caminho_destino, "Requisicao/Suprimentos")
 
             if self.acao_var.get() == "nova":
                 # Gera o nome da nova pasta
@@ -192,18 +219,25 @@ class HomeScreen(BaseScreen):
                 os.makedirs(caminho_nova_pasta_engenharia, exist_ok=True)
                 os.makedirs(caminho_nova_pasta_suprimentos, exist_ok=True)
                 # Define o novo nome do arquivo com base no nome da nova pasta
-                nome_arquivo_novo = nome_nova_pasta + os.path.splitext(self.caminho_arquivo.get())[1]
+                nome_arquivo_novo = nome_nova_pasta[:12] + "-R0" + os.path.splitext(self.caminho_arquivo.get())[1]
                 caminho_arquivo_destino_engenharia = os.path.join(caminho_nova_pasta_engenharia, nome_arquivo_novo)
                 caminho_arquivo_destino_suprimentos = os.path.join(caminho_nova_pasta_suprimentos, nome_arquivo_novo)
 
             else:
                 # Obtém o nome do arquivo original
                 nome_arquivo_original = os.path.basename(self.caminho_arquivo.get())
+                
+                caminho_pasta_existente_engenharia = self.encontrar_pasta_por_prefixo(caminho_destino_engenharia, nome_arquivo_original[:12])
+                caminho_pasta_existente_suprimentos = self.encontrar_pasta_por_prefixo(caminho_destino_suprimentos, nome_arquivo_original[:12])
+                print("Engenharia: ", caminho_pasta_existente_engenharia)
+                print("Suprimentos: ", caminho_pasta_existente_suprimentos)
                 # Define o caminho da pasta existente onde o arquivo será copiado
-                caminho_pasta_existente_engenharia = os.path.join(caminho_destino_engenharia, nome_arquivo_original.split(".")[0])
-                caminho_pasta_existente_suprimentos = os.path.join(caminho_destino_suprimentos, nome_arquivo_original.split(".")[0])
-                caminho_arquivo_destino_engenharia = os.path.join(caminho_pasta_existente_engenharia, nome_arquivo_original)
-                caminho_arquivo_destino_suprimentos = os.path.join(caminho_pasta_existente_suprimentos, nome_arquivo_original)
+                #caminho_pasta_existente_engenharia = os.path.join(caminho_destino_engenharia, nome_arquivo_original.split(" ")[0])
+                #caminho_pasta_existente_suprimentos = os.path.join(caminho_destino_suprimentos, nome_arquivo_original.split(" ")[0])
+
+                nome_arquivo_novo = self.obter_proxima_revisao(caminho_pasta_existente_engenharia, nome_arquivo_original[:12]) + "." + nome_arquivo_original.split(".")[1]
+                caminho_arquivo_destino_engenharia = os.path.join(caminho_pasta_existente_engenharia, nome_arquivo_novo)
+                caminho_arquivo_destino_suprimentos = os.path.join(caminho_pasta_existente_suprimentos, nome_arquivo_novo)
 
 
             # Verifica se o arquivo de origem existe
