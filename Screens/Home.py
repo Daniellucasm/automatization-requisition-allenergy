@@ -193,8 +193,8 @@ class HomeScreen(BaseScreen):
 
             # Caminho de destino específico para o projeto
             caminho_destino = os.path.join(caminho_base, self.projeto.get())
-            caminho_destino_engenharia = os.path.join(caminho_destino, "Engenharia")
-            caminho_destino_suprimentos = os.path.join(caminho_destino, "Suprimentos")
+            caminho_destino_engenharia = os.path.join(caminho_destino, "Requisicao/Engenharia")
+            caminho_destino_suprimentos = os.path.join(caminho_destino, "Requisicao/Suprimentos")
 
             if self.acao_var.get() == "nova":
                 # Gera o nome da nova pasta
@@ -207,18 +207,20 @@ class HomeScreen(BaseScreen):
                 os.makedirs(caminho_nova_pasta_engenharia, exist_ok=True)
                 os.makedirs(caminho_nova_pasta_suprimentos, exist_ok=True)
                 # Define o novo nome do arquivo com base no nome da nova pasta
-                nome_arquivo_novo = nome_nova_pasta + os.path.splitext(self.caminho_arquivo.get())[1]
+                nome_arquivo_novo = nome_nova_pasta + " - R0" + os.path.splitext(self.caminho_arquivo.get())[1]
+                print("Split: ", os.path.splitext(self.caminho_arquivo.get())[1])
                 caminho_arquivo_destino_engenharia = os.path.join(caminho_nova_pasta_engenharia, nome_arquivo_novo)
                 caminho_arquivo_destino_suprimentos = os.path.join(caminho_nova_pasta_suprimentos, nome_arquivo_novo)
 
             else:
                 # Obtém o nome do arquivo original
-                nome_arquivo_original = os.path.basename(self.caminho_arquivo.get())
+                nome_arquivo_original = os.path.basename(self.caminho_arquivo.get()).split(".")
+                nome_arquivo_novo = nome_arquivo_original[0]+ f" - R{self.revisao.get()}." + nome_arquivo_original[1]
                 # Define o caminho da pasta existente onde o arquivo será copiado
-                caminho_pasta_existente_engenharia = os.path.join(caminho_destino_engenharia, nome_arquivo_original.split(".")[0])
-                caminho_pasta_existente_suprimentos = os.path.join(caminho_destino_suprimentos, nome_arquivo_original.split(".")[0])
-                caminho_arquivo_destino_engenharia = os.path.join(caminho_pasta_existente_engenharia, nome_arquivo_original)
-                caminho_arquivo_destino_suprimentos = os.path.join(caminho_pasta_existente_suprimentos, nome_arquivo_original)
+                caminho_pasta_existente_engenharia = os.path.join(caminho_destino_engenharia, nome_arquivo_original[0])
+                caminho_pasta_existente_suprimentos = os.path.join(caminho_destino_suprimentos, nome_arquivo_original[0])
+                caminho_arquivo_destino_engenharia = os.path.join(caminho_pasta_existente_engenharia, nome_arquivo_novo)
+                caminho_arquivo_destino_suprimentos = os.path.join(caminho_pasta_existente_suprimentos, nome_arquivo_novo)
 
 
             # Verifica se o arquivo de origem existe
