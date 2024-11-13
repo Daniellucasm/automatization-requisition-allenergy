@@ -5,6 +5,7 @@ import re
 from tkinter import ttk
 from tkinter import messagebox, filedialog, simpledialog
 from Screens.Base import BaseScreen
+from openpyxl import load_workbook
 
 
 class HomeScreen(BaseScreen):
@@ -194,6 +195,26 @@ class HomeScreen(BaseScreen):
         except Exception as e:
             print(f"Ocorreu um erro: {e}")
             return None
+        
+    def abrir_alterar_arquivo(self, num_requisicao):
+        workbook = load_workbook(filename=self.caminho_arquivo.get())
+        sheet = workbook["Formulário"]
+
+        print(num_requisicao)
+
+        # Alterar o valor da célula B3
+        sheet["G4"] = num_requisicao
+        # Quebrando a string pelo hífen e armazenando em uma lista
+        partes_projeto = self.projeto.get().split("-") #número requisição
+        # Removendo espaços em branco de cada parte e armazenando em uma nova lista
+        partes_limpas = [parte.strip() for parte in partes_projeto]
+
+        sheet["A6"] = partes_limpas[0] #número projeto
+        sheet["D6"] = partes_limpas[1] #nome projeto
+
+        # Salvar as mudanças no arquivo Excel
+        workbook.save(self.caminho_arquivo.get())
+
 
     def copiar_arquivo(self):
         try:
@@ -223,6 +244,8 @@ class HomeScreen(BaseScreen):
                 caminho_arquivo_destino_engenharia = os.path.join(caminho_nova_pasta_engenharia, nome_arquivo_novo)
                 caminho_arquivo_destino_suprimentos = os.path.join(caminho_nova_pasta_suprimentos, nome_arquivo_novo)
 
+                self.abrir_alterar_arquivo(nome_nova_pasta[:12])
+                
             else:
                 # Obtém o nome do arquivo original
                 nome_arquivo_original = os.path.basename(self.caminho_arquivo.get())
@@ -238,6 +261,8 @@ class HomeScreen(BaseScreen):
                 nome_arquivo_novo = self.obter_proxima_revisao(caminho_pasta_existente_engenharia, nome_arquivo_original[:12]) + "." + nome_arquivo_original.split(".")[1]
                 caminho_arquivo_destino_engenharia = os.path.join(caminho_pasta_existente_engenharia, nome_arquivo_novo)
                 caminho_arquivo_destino_suprimentos = os.path.join(caminho_pasta_existente_suprimentos, nome_arquivo_novo)
+
+                self.abrir_alterar_arquivo(nome_arquivo_novo[:12])
 
 
             # Verifica se o arquivo de origem existe
