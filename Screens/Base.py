@@ -26,11 +26,11 @@ class BaseScreen(tk.Tk):
         windowWidth = self.winfo_reqwidth()
         windowHeight = self.winfo_reqheight()
 
-        positionRight = int(self.winfo_screenwidth()/2 - windowWidth/2)
-        positionDown = int(self.winfo_screenheight()/2 - windowHeight/2)
+        self.positionRight = int(self.winfo_screenwidth()/2 - windowWidth/2)
+        self.positionDown = int(self.winfo_screenheight()/2 - windowHeight/2)
 
         # Positions the window in the center of the page.
-        self.geometry("+{}+{}".format(positionRight, positionDown))
+        self.geometry("+{}+{}".format(self.positionRight, self.positionDown))
 
         #---------------------------
         #        Componentes

@@ -2,11 +2,13 @@ import tkinter as tk
 import shutil
 import os
 import re
+import subprocess
+import platform
+import time
 from tkinter import ttk
 from tkinter import messagebox, filedialog, simpledialog
 from Screens.Base import BaseScreen
 from openpyxl import load_workbook
-
 
 class HomeScreen(BaseScreen):
 
@@ -19,6 +21,7 @@ class HomeScreen(BaseScreen):
         self.title("Programa Requisição")
         self.geometry("400x300")
         #self.configure(bg='grey')
+        self.acao_var = tk.StringVar(value="")
 
         # ---------------------------
         #        Componentes
@@ -27,71 +30,116 @@ class HomeScreen(BaseScreen):
         label.pack()
 
         # Variáveis para armazenar a ação selecionada (Criar Nova ou Usar Existente), tipo de requisição e projeto
-        self.acao_var = tk.StringVar(value="")
         self.tipo_var = tk.StringVar(value="")
         self.projeto = tk.StringVar(value="")
         self.revisao = tk.StringVar(value="")
         self.caminho_arquivo = tk.StringVar(value="")
 
         # Frame principal com botões de seleção de requisição
-        opcoes_frame = tk.Frame(self)#bg='gray'
+        opcoes_frame = tk.Frame(self)
         opcoes_frame.pack(fill="both", padx=10, pady=10)
 
         button_new_request = tk.Button(opcoes_frame, text="Criar Uma Nova Requisição",
-                                       command=lambda: self.atualizar_opcoes("nova"))
+                                       command=lambda: self.abrir_nova_janela("nova"))
         button_new_request.pack(pady=10)
 
         button_update_request = tk.Button(opcoes_frame, text="Editar Requisição Existente",
-                                          command=lambda: self.atualizar_opcoes("existente"))
+                                          command=lambda: self.abrir_nova_janela("existente"))
         button_update_request.pack(pady=10)
 
-        self.projeto_combox_frame = tk.Frame(self)
-        self.projeto_combox_frame.columnconfigure(0, weight=1)
 
-        #Combox para listar projetos
-        self.projeto_combobox = ttk.Combobox(self.projeto_combox_frame, values=self.projetos, width=30)
+    def abrir_nova_janela(self, acao):
+        """Abre uma nova janela para criar uma nova requisição."""
+        self.acao_var.set(acao)
+        self.projeto.set("")
+        nova_janela = tk.Toplevel(self)
+        nova_janela.title("Nova Requisição" if acao == "nova" else "Editar Requisicao")
+        nova_janela.geometry("400x300")
+        nova_janela.geometry("+{}+{}".format(self.positionRight, self.positionDown))
+
+        # Combox para listar projetos
+        label_projeto = tk.Label(nova_janela, text="Selecione o Projeto:")
+        label_projeto.pack(pady=5)
+
+        self.projeto_combobox = ttk.Combobox(nova_janela, values=self.projetos, width=30)
         self.projeto_combobox.pack(pady=5)
+
+        # Frame para os botões de tipo de requisição
+        tipo_requisicao_frame = tk.Frame(nova_janela)
+        tipo_requisicao_frame.pack(pady=20)
         self.projeto_combobox.bind("<<ComboboxSelected>>", self.atualizar_projeto)
 
-        # Frame para os botões de tipo de requisição (RCO ou RSE)
-        self.tipo_requisicao_frame = tk.Frame(self) #bg='gray'
-        # Configurar o frame para centralizar os botões
-        self.tipo_requisicao_frame.columnconfigure(1, weight=1)
-        self.tipo_requisicao_frame.columnconfigure(2, weight=1)
+        if self.acao_var.get() == "nova":
+            # Botão para selecionar RCO
+            rco_btn = ttk.Button(tipo_requisicao_frame, text="RCO", 
+                                command=lambda: self.exibir_botao_salvar("RCO", nova_janela))  
+            rco_btn.grid(row=0, column=0, padx=10)
 
-        # Botão para selecionar RCO
-        self.rco_btn = ttk.Button(self.tipo_requisicao_frame, text="RCO", command=lambda: self.selecionar_arquivo("RCO")
-                                                                        if self.projeto.get() != "" 
-                                                                        else messagebox.showinfo("Projeto não Selecionado", "Escolher um projeto antes de gerar requisição!"))
-        self.rco_btn.grid(row=0, column=1, padx=20, sticky="ew")  # "ew" para expandir horizontalmente
+            # Botão para selecionar RSE
+            rse_btn = ttk.Button(tipo_requisicao_frame, text="RSE", 
+                                command=lambda: self.exibir_botao_salvar("RCO", nova_janela))
+            rse_btn.grid(row=0, column=1, padx=10)
+        elif self.acao_var.get() == "existente":
+            # Botão para selecionar RCO
+            rco_btn = ttk.Button(tipo_requisicao_frame, text="RCO", 
+                                command=lambda: self.selecionar_arquivo("RCO"))
+            rco_btn.grid(row=0, column=0, padx=10)
 
-        # Botão para selecionar RSE
-        self.rse_btn = ttk.Button(self.tipo_requisicao_frame, text="RSE", command=lambda: self.selecionar_arquivo("RSE") 
-                                                                        if self.projeto.get() != "" 
-                                                                        else messagebox.showinfo("Projeto não Selecionado", "Escolher um projeto antes de gerar requisição!"))
-        self.rse_btn.grid(row=0, column=2, padx=20, sticky="ew")  # "ew" para expandir horizontalmente
+            # Botão para selecionar RSE
+            rse_btn = ttk.Button(tipo_requisicao_frame, text="RSE", 
+                                command=lambda: self.selecionar_arquivo("RSE"))
+            rse_btn.grid(row=0, column=1, padx=10)
 
+    def exibir_botao_salvar(self, tipo, janela):
+        """Exibe o botão Salvar após selecionar RCO ou RSE."""
+        if not self.projeto.get():
+            messagebox.showwarning("Aviso", "Por favor, selecione um projeto antes de continuar.")
+            return
+
+        self.abrir_arquivo(tipo)
+
+        # Adiciona o botão Salvar
+        salvar_frame = tk.Frame(janela)
+        salvar_frame.pack(pady=20)
+
+        salvar_btn = ttk.Button(
+            salvar_frame,
+            text="Salvar",
+            command=lambda: print("SALVAR")
+        )
+        salvar_btn.pack(pady=5)
+    
     def atualizar_projeto(self, event):
         self.projeto.set(self.projeto_combobox.get()) 
-          
-    def atualizar_opcoes(self, acao):
-        """ Atualiza a interface para mostrar os botões de seleção de RCO ou RSE com base na ação selecionada """
-        self.acao_var.set(acao)
 
-        # Exibe o frame para seleção de RCO ou RSE dependendo da ação
-        if acao == "nova":
-            self.projeto_combox_frame.pack()
-            self.tipo_requisicao_frame.pack(fill="x", padx=20, pady=10)
-        elif acao == "existente":
-            self.projeto_combox_frame.pack()
-            self.tipo_requisicao_frame.pack(fill="x", padx=20, pady=10)
-        else:
-            self.projeto_combox_frame.pack_forget()
-            self.tipo_requisicao_frame.pack_forget()
+    def abrir_arquivo(self, tipo):
+        # Caminho do arquivo Excel
+        self.tipo_var.set(tipo)
+        file_path = 'XXXX-RCO-000.xlsx' if self.tipo_var.get() == "RCO" else "XXXX-RSE-000.xlsx"
+
+        # Detectar o sistema operacional
+        system = platform.system()
+
+        try:
+            if system == 'Windows':
+                # No Windows, use 'start'
+                subprocess.run(['start', file_path], shell=True)
+            elif system == 'Darwin':  # macOS
+                # No macOS, use 'open'
+                subprocess.run(['open', file_path])
+            else:  # Linux
+                # No Linux, use 'xdg-open'
+                subprocess.run(['xdg-open', file_path])
+            print("Arquivo Excel aberto com sucesso!")
+        except Exception as e:
+            print(f"Erro ao tentar abrir o arquivo: {e}")
 
     def selecionar_arquivo(self, tipo):
         """ Abre uma janela de diálogo para selecionar o arquivo .xlsx """
         self.tipo_var.set(tipo)
+        if not self.projeto.get():
+            messagebox.showwarning("Aviso", "Por favor, selecione um projeto antes de continuar.")
+            return
 
         file_path = filedialog.askopenfilename(
             title="Selecione um Arquivo Excel",

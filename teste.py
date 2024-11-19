@@ -1,24 +1,22 @@
-import shutil
-import os
+import subprocess
+import platform
 
-def copiar_arquivo(caminho_origem, caminho_destino, caminho_destino_2):
-    try:
-        # Verifica se o arquivo de origem existe
-        if os.path.exists(caminho_origem):
-            # Move o arquivo
-            shutil.copy(caminho_origem, caminho_destino)
-            shutil.copy(caminho_origem, caminho_destino_2)
-            print(f"Arquivo movido para {caminho_destino}")
-            print(f"Arquivo movido para {caminho_destino_2}")
-        else:
-            print("Arquivo de origem não encontrado.")
-    except Exception as e:
-        print(f"Ocorreu um erro: {e}")
+# Caminho do arquivo Excel
+file_path = '1804-RCO-008 - Copiar.xlsx'
 
-# Caminhos de origem e destino
-caminho_origem = "/Users/daniellucas/Library/Mobile Documents/com~apple~CloudDocs/All Energy/Programa RCO/ModelosXLSX/XXXX-RCO-000.xlsx"
-caminho_destino = "/Users/daniellucas/Library/Mobile Documents/com~apple~CloudDocs/All Energy/Programa RCO/Move"
-caminho_destino_2 = "/Users/daniellucas/Library/Mobile Documents/com~apple~CloudDocs/All Energy/Programa RCO/Move2"
+# Detectar o sistema operacional
+system = platform.system()
 
-# Chama a função para mover o arquivo
-copiar_arquivo(caminho_origem, caminho_destino, caminho_destino_2)
+try:
+    if system == 'Windows':
+        # No Windows, use 'start'
+        subprocess.run(['start', file_path], shell=True)
+    elif system == 'Darwin':  # macOS
+        # No macOS, use 'open'
+        subprocess.run(['open', file_path])
+    else:  # Linux
+        # No Linux, use 'xdg-open'
+        subprocess.run(['xdg-open', file_path])
+    print("Arquivo Excel aberto com sucesso!")
+except Exception as e:
+    print(f"Erro ao tentar abrir o arquivo: {e}")
