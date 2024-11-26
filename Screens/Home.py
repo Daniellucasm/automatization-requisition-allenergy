@@ -4,9 +4,9 @@ import os
 import re
 import subprocess
 import platform
-import time
+from difflib import get_close_matches
 from tkinter import ttk
-from tkinter import messagebox, filedialog, simpledialog
+from tkinter import messagebox, simpledialog
 from Screens.Base import BaseScreen
 from openpyxl import load_workbook
 
@@ -33,6 +33,7 @@ class HomeScreen(BaseScreen):
         self.tipo_var = tk.StringVar(value="")
         self.projeto = tk.StringVar(value="")
         self.revisao = tk.StringVar(value="")
+        self.requisicao = tk.StringVar(value="")
         self.caminho_arquivo = tk.StringVar(value="")
 
         # Frame principal com botões de seleção de requisição
@@ -77,84 +78,137 @@ class HomeScreen(BaseScreen):
 
             # Botão para selecionar RSE
             rse_btn = ttk.Button(tipo_requisicao_frame, text="RSE", 
-                                command=lambda: self.exibir_botao_salvar("RCO", nova_janela))
+                                command=lambda: self.exibir_botao_salvar("RSE", nova_janela))
             rse_btn.grid(row=0, column=1, padx=10)
         elif self.acao_var.get() == "existente":
             # Botão para selecionar RCO
             rco_btn = ttk.Button(tipo_requisicao_frame, text="RCO", 
-                                command=lambda: self.selecionar_arquivo("RCO"))
+                                command=lambda: self.janela_requisicoes_existentes("RCO"))
             rco_btn.grid(row=0, column=0, padx=10)
 
             # Botão para selecionar RSE
             rse_btn = ttk.Button(tipo_requisicao_frame, text="RSE", 
-                                command=lambda: self.selecionar_arquivo("RSE"))
+                                command=lambda: self.janela_requisicoes_existentes("RSE"))
             rse_btn.grid(row=0, column=1, padx=10)
-
-    def exibir_botao_salvar(self, tipo, janela):
-        """Exibe o botão Salvar após selecionar RCO ou RSE."""
+    
+    def janela_requisicoes_existentes(self, tipo):
+        self.requisicao.set("")
         if not self.projeto.get():
             messagebox.showwarning("Aviso", "Por favor, selecione um projeto antes de continuar.")
             return
 
-        self.abrir_arquivo(tipo)
+        nova_janela = tk.Toplevel(self)
+        nova_janela.title("Editar Requisicao")
+        nova_janela.geometry("400x150")
+        nova_janela.geometry("+{}+{}".format(self.positionRight, self.positionDown))
 
-        # Adiciona o botão Salvar
-        salvar_frame = tk.Frame(janela)
+        # Combox para listar projetos
+        label_projeto = tk.Label(nova_janela, text=f"Selecione a {tipo}:")
+        label_projeto.pack(pady=5)
+
+        diretorio = "/Users/daniellucas/Library/Mobile Documents/com~apple~CloudDocs/All Energy/"
+        diretorio = os.path.join(diretorio, self.projeto.get())
+        diretorio = os.path.join(diretorio, "Requisicao/Engenharia/")
+        # Lista todos os diretórios no caminho especificado
+        pastas = [nome for nome in os.listdir(diretorio) if os.path.isdir(os.path.join(diretorio, nome))]
+        pastas = sorted(pastas)
+
+        self.requisicao_combobox = ttk.Combobox(nova_janela, values=pastas, width=30)
+        self.requisicao_combobox.pack(pady=5)
+
+        salvar_frame = tk.Frame(nova_janela)
         salvar_frame.pack(pady=20)
+        self.requisicao_combobox.bind("<<ComboboxSelected>>", lambda event: self.atualizar_requisicao(event, diretorio))
 
+        self.param = 0
         salvar_btn = ttk.Button(
             salvar_frame,
+            text="Salvar Alterações",
+            command=self.atualizar_requisicao_alterada
+        )
+        salvar_btn.pack(pady=5)
+
+    def encontrar_arquivo_mais_proximo(self, diretorio, nome_arquivo_base):
+        # Lista todos os arquivos no diretório
+        arquivos = os.listdir(diretorio)
+
+        # Obtém os nomes mais próximos usando `difflib.get_close_matches`
+        mais_proximos = get_close_matches(nome_arquivo_base, arquivos, n=1)
+
+        # Retorna o mais próximo ou None se nenhum for encontrado
+        return mais_proximos[0] if mais_proximos else None
+
+    def atualizar_requisicao(self, event, diretorio):
+        self.requisicao.set(self.requisicao_combobox.get())
+        if self.requisicao.get() != "":
+            diretorio = os.path.join(diretorio, self.requisicao.get())
+            diretorio = os.path.join(diretorio, self.encontrar_arquivo_mais_proximo(diretorio, self.requisicao.get()[:12]))    
+            self.caminho_arquivo.set(diretorio)
+            self.copiar_arquivo()
+
+    def atualizar_requisicao_alterada(self):
+        if self.param == 0:
+            messagebox.showwarning("Aviso", "Por favor, selecione uma requisicao antes de continuar.")
+            return
+        shutil.copy(self.caminho_arquivo_destino_engenharia, self.caminho_arquivo_destino_suprimentos)
+        messagebox.showinfo("Aviso", "Alterações salvas com sucesso")
+
+    def exibir_botao_salvar(self, tipo, janela):
+        self.tipo_var.set(tipo)
+        if not self.projeto.get():
+            messagebox.showwarning("Aviso", "Por favor, selecione um projeto antes de continuar.")
+            return
+        
+        self.caminho_arquivo.set('XXXX-RCO-000.xlsx' if self.tipo_var.get() == "RCO" else "XXXX-RSE-000.xlsx")
+        self.abrir_arquivo(self.caminho_arquivo.get())
+
+        # Remove o frame anterior, se existir
+        if hasattr(self, "salvar_frame") and self.salvar_frame.winfo_exists():
+            self.salvar_frame.destroy()
+
+        # Adiciona o botão Salvar
+        self.salvar_frame = tk.Frame(janela)
+        self.salvar_frame.pack(pady=20)
+
+        salvar_btn = ttk.Button(
+            self.salvar_frame,
             text="Salvar",
-            command=lambda: print("SALVAR")
+            command=lambda: self.copiar_arquivo()
         )
         salvar_btn.pack(pady=5)
     
     def atualizar_projeto(self, event):
         self.projeto.set(self.projeto_combobox.get()) 
 
-    def abrir_arquivo(self, tipo):
-        # Caminho do arquivo Excel
-        self.tipo_var.set(tipo)
-        file_path = 'XXXX-RCO-000.xlsx' if self.tipo_var.get() == "RCO" else "XXXX-RSE-000.xlsx"
-
+    def abrir_arquivo(self, file_path):
         # Detectar o sistema operacional
         system = platform.system()
 
         try:
+            # Inicializa o comando correto para abrir o arquivo
             if system == 'Windows':
-                # No Windows, use 'start'
-                subprocess.run(['start', file_path], shell=True)
+                # No Windows, use 'start' com 'cmd' e '/wait' para bloquear até o arquivo ser fechado
+                processo = subprocess.Popen(['cmd', '/c', 'start', '/wait', file_path], shell=True)
             elif system == 'Darwin':  # macOS
-                # No macOS, use 'open'
-                subprocess.run(['open', file_path])
+                # No macOS, use 'open' e espere pelo término
+                if self.acao_var.get() == "novo":
+                    partes = self.caminho_arquivo.get().split(".")
+                    novo_nome = partes[0] + " - Cópia." + partes[1]
+                    shutil.copy(self.caminho_arquivo.get(), novo_nome)
+                    processo = subprocess.Popen(['open', novo_nome])
+                    self.caminho_arquivo.set(novo_nome)
+                else:
+                    processo = subprocess.Popen(['open', file_path])      
             else:  # Linux
-                # No Linux, use 'xdg-open'
-                subprocess.run(['xdg-open', file_path])
-            print("Arquivo Excel aberto com sucesso!")
+                # No Linux, use 'xdg-open' e espere pelo término
+                processo = subprocess.Popen(['xdg-open', file_path])
+
+            # Aguarda o fechamento do arquivo
+            processo.wait()
         except Exception as e:
             print(f"Erro ao tentar abrir o arquivo: {e}")
-
-    def selecionar_arquivo(self, tipo):
-        """ Abre uma janela de diálogo para selecionar o arquivo .xlsx """
-        self.tipo_var.set(tipo)
-        if not self.projeto.get():
-            messagebox.showwarning("Aviso", "Por favor, selecione um projeto antes de continuar.")
-            return
-
-        file_path = filedialog.askopenfilename(
-            title="Selecione um Arquivo Excel",
-            filetypes=[("Arquivos Excel", "*.xlsx"), ["Arquivos Excel", "*.xls"]])
-        
-        if file_path:
-            messagebox.showinfo("Arquivo Selecionado", "Arquivo anexado com sucesso!")
-            self.caminho_arquivo.set(file_path)
-            self.copiar_arquivo()
-        else:
-            messagebox.showinfo("Arquivo não selecionado", "Arquivo não foi anexado")
-        
-
+    
     def requisicoes_existentes(self, diretorio):
-        print("Fazer a leitura das pastas de requisições")
         if self.tipo_var.get() == "RCO":
             prefixo = self.projeto.get()[:4] + "-" + self.tipo_var.get()  # Número do código de projeto + RCO EX: 1804-RCO
             nova_pasta = self.ler_requisicoes_existentes(diretorio, prefixo)
@@ -289,8 +343,8 @@ class HomeScreen(BaseScreen):
                 os.makedirs(caminho_nova_pasta_suprimentos, exist_ok=True)
                 # Define o novo nome do arquivo com base no nome da nova pasta
                 nome_arquivo_novo = nome_nova_pasta[:12] + "-R0" + os.path.splitext(self.caminho_arquivo.get())[1]
-                caminho_arquivo_destino_engenharia = os.path.join(caminho_nova_pasta_engenharia, nome_arquivo_novo)
-                caminho_arquivo_destino_suprimentos = os.path.join(caminho_nova_pasta_suprimentos, nome_arquivo_novo)
+                self.caminho_arquivo_destino_engenharia = os.path.join(caminho_nova_pasta_engenharia, nome_arquivo_novo)
+                self.caminho_arquivo_destino_suprimentos = os.path.join(caminho_nova_pasta_suprimentos, nome_arquivo_novo)
 
                 self.abrir_alterar_arquivo(nome_nova_pasta[:12])
                 
@@ -298,27 +352,32 @@ class HomeScreen(BaseScreen):
                 # Obtém o nome do arquivo original
                 nome_arquivo_original = os.path.basename(self.caminho_arquivo.get())
                 
-                caminho_pasta_existente_engenharia = self.encontrar_pasta_por_prefixo(caminho_destino_engenharia, nome_arquivo_original[:12])
-                caminho_pasta_existente_suprimentos = self.encontrar_pasta_por_prefixo(caminho_destino_suprimentos, nome_arquivo_original[:12])
+                caminho_pasta_existente_engenharia = self.encontrar_pasta_por_prefixo(caminho_destino_engenharia, self.requisicao.get()[:12])
+                caminho_pasta_existente_suprimentos = self.encontrar_pasta_por_prefixo(caminho_destino_suprimentos, self.requisicao.get()[:12])
                 print("Engenharia: ", caminho_pasta_existente_engenharia)
                 print("Suprimentos: ", caminho_pasta_existente_suprimentos)
-                # Define o caminho da pasta existente onde o arquivo será copiado
+                #Define o caminho da pasta existente onde o arquivo será copiado
                 #caminho_pasta_existente_engenharia = os.path.join(caminho_destino_engenharia, nome_arquivo_original.split(" ")[0])
                 #caminho_pasta_existente_suprimentos = os.path.join(caminho_destino_suprimentos, nome_arquivo_original.split(" ")[0])
 
                 nome_arquivo_novo = self.obter_proxima_revisao(caminho_pasta_existente_engenharia, nome_arquivo_original[:12]) + "." + nome_arquivo_original.split(".")[1]
-                caminho_arquivo_destino_engenharia = os.path.join(caminho_pasta_existente_engenharia, nome_arquivo_novo)
-                caminho_arquivo_destino_suprimentos = os.path.join(caminho_pasta_existente_suprimentos, nome_arquivo_novo)
+                self.caminho_arquivo_destino_engenharia = os.path.join(caminho_pasta_existente_engenharia, nome_arquivo_novo)
+                self.caminho_arquivo_destino_suprimentos = os.path.join(caminho_pasta_existente_suprimentos, nome_arquivo_novo)
 
                 self.abrir_alterar_arquivo(nome_arquivo_novo[:12])
 
 
             # Verifica se o arquivo de origem existe
             if os.path.exists(self.caminho_arquivo.get()):
-                # Copia o arquivo e renomeia
-                shutil.copy(self.caminho_arquivo.get(), caminho_arquivo_destino_engenharia)
-                shutil.copy(self.caminho_arquivo.get(), caminho_arquivo_destino_suprimentos)
-                messagebox.showinfo("Atenção", "Arquivo copiado com sucesso")
+                if self.acao_var.get() == "novo":
+                    # Copia o arquivo e renomeia
+                    shutil.copy(self.caminho_arquivo.get(), self.caminho_arquivo_destino_engenharia)
+                    shutil.move(self.caminho_arquivo.get(), self.caminho_arquivo_destino_suprimentos)
+                elif self.acao_var.get() == "existente":
+                    shutil.copy(self.caminho_arquivo.get(), self.caminho_arquivo_destino_engenharia)
+                    shutil.copy(self.caminho_arquivo.get(), self.caminho_arquivo_destino_suprimentos)
+                    self.param = 1
+                    self.abrir_arquivo(self.caminho_arquivo_destino_engenharia)
             else:
                 messagebox.showinfo("Atenção", "Arquivo não foi copiado!")
         except Exception as e:
