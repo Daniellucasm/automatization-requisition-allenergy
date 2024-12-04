@@ -191,7 +191,7 @@ class HomeScreen(BaseScreen):
                 processo = subprocess.Popen(['cmd', '/c', 'start', '/wait', file_path], shell=True)
             elif system == 'Darwin':  # macOS
                 # No macOS, use 'open' e espere pelo término
-                if self.acao_var.get() == "novo":
+                if self.acao_var.get() == "nova":
                     partes = self.caminho_arquivo.get().split(".")
                     novo_nome = partes[0] + " - Cópia." + partes[1]
                     shutil.copy(self.caminho_arquivo.get(), novo_nome)
@@ -369,10 +369,11 @@ class HomeScreen(BaseScreen):
 
             # Verifica se o arquivo de origem existe
             if os.path.exists(self.caminho_arquivo.get()):
-                if self.acao_var.get() == "novo":
+                if self.acao_var.get() == "nova":
                     # Copia o arquivo e renomeia
                     shutil.copy(self.caminho_arquivo.get(), self.caminho_arquivo_destino_engenharia)
                     shutil.move(self.caminho_arquivo.get(), self.caminho_arquivo_destino_suprimentos)
+                    messagebox.showinfo("Atenção", "Arquivo criado com sucesso!")
                 elif self.acao_var.get() == "existente":
                     shutil.copy(self.caminho_arquivo.get(), self.caminho_arquivo_destino_engenharia)
                     shutil.copy(self.caminho_arquivo.get(), self.caminho_arquivo_destino_suprimentos)
