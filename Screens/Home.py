@@ -4,6 +4,7 @@ import os
 import re
 import subprocess
 import platform
+import time
 from difflib import get_close_matches
 from tkinter import ttk
 from tkinter import messagebox, simpledialog
@@ -106,9 +107,11 @@ class HomeScreen(BaseScreen):
         label_projeto = tk.Label(nova_janela, text=f"Selecione a {tipo}:")
         label_projeto.pack(pady=5)
 
-        diretorio = "/Users/daniellucas/Library/Mobile Documents/com~apple~CloudDocs/All Energy/"
+        diretorio = "C:\\Users\\daniel.murta\\All Energy\\Apropriação de Horas - Documentos\\Testes"
+        #"/Users/daniellucas/Library/Mobile Documents/com~apple~CloudDocs/All Energy/" - MAC
+        #C:\Users\daniel.murta\All Energy\Apropriação de Horas - Documentos\Testes - Windows
         diretorio = os.path.join(diretorio, self.projeto.get())
-        diretorio = os.path.join(diretorio, "Requisicao/Engenharia/")
+        diretorio = os.path.join(diretorio, "Requisicao\\Engenharia\\")
         # Lista todos os diretórios no caminho especificado
         pastas = [nome for nome in os.listdir(diretorio) if os.path.isdir(os.path.join(diretorio, nome))]
         pastas = sorted(pastas)
@@ -184,11 +187,25 @@ class HomeScreen(BaseScreen):
         # Detectar o sistema operacional
         system = platform.system()
 
+        file_path = file_path.lstrip("\\")
         try:
             # Inicializa o comando correto para abrir o arquivo
             if system == 'Windows':
-                # No Windows, use 'start' com 'cmd' e '/wait' para bloquear até o arquivo ser fechado
-                processo = subprocess.Popen(['cmd', '/c', 'start', '/wait', file_path], shell=True)
+                if self.acao_var.get() == "nova":
+                    partes = self.caminho_arquivo.get().split(".")
+                    novo_nome = partes[0] + "-Cópia." + partes[1]
+                    shutil.copy(self.caminho_arquivo.get(), novo_nome)
+                    
+                    processo = subprocess.Popen(['cmd', '/c', 'start', '', novo_nome], shell=True)
+
+                    self.caminho_arquivo.set(novo_nome)
+                else:
+                    cmd = f'start "" "{file_path}"'
+                    print(f"Comando gerado: {cmd}")
+                    processo = subprocess.Popen(cmd, shell=True)
+
+                    #print(f"Comando gerado: cmd /c start \"\" \"{file_path}\"")
+                    #processo = subprocess.Popen(['cmd', '/c', 'start', "", f'"{file_path}"'], shell=True)
             elif system == 'Darwin':  # macOS
                 # No macOS, use 'open' e espere pelo término
                 if self.acao_var.get() == "nova":
@@ -321,15 +338,15 @@ class HomeScreen(BaseScreen):
     def copiar_arquivo(self):
         try:
             # Caminho base da pasta "Documents" do usuário
-            path = "/Users/daniellucas/Library/Mobile Documents/com~apple~CloudDocs/All Energy/"
+            path = "C:\\Users\\daniel.murta\\All Energy\\Apropriação de Horas - Documentos\\Testes"
             #/Users/daniellucas/Library/Mobile Documents/com~apple~CloudDocs/All Energy/
             #C:\\Users\\daniel.murta\\All Energy\\Apropriação de Horas - Documentos\\Testes
             caminho_base = os.path.expanduser(path)
 
             # Caminho de destino específico para o projeto
             caminho_destino = os.path.join(caminho_base, self.projeto.get())
-            caminho_destino_engenharia = os.path.join(caminho_destino, "Requisicao/Engenharia")
-            caminho_destino_suprimentos = os.path.join(caminho_destino, "Requisicao/Suprimentos")
+            caminho_destino_engenharia = os.path.join(caminho_destino, "Requisicao\\Engenharia")
+            caminho_destino_suprimentos = os.path.join(caminho_destino, "Requisicao\\Suprimentos")
 
             if self.acao_var.get() == "nova":
                 # Gera o nome da nova pasta
@@ -378,6 +395,7 @@ class HomeScreen(BaseScreen):
                     shutil.copy(self.caminho_arquivo.get(), self.caminho_arquivo_destino_engenharia)
                     shutil.copy(self.caminho_arquivo.get(), self.caminho_arquivo_destino_suprimentos)
                     self.param = 1
+                    print(self.caminho_arquivo_destino_engenharia)
                     self.abrir_arquivo(self.caminho_arquivo_destino_engenharia)
             else:
                 messagebox.showinfo("Atenção", "Arquivo não foi copiado!")
