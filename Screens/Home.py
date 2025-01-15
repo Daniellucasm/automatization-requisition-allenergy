@@ -6,7 +6,7 @@ from Utilities.FileManager import FileManager
 from tkinter import ttk
 from tkinter import messagebox, simpledialog
 from Screens.Base import BaseScreen
-from openpyxl import load_workbook
+from openpyxl import load_workbook # type: ignore
 
 class HomeScreen(BaseScreen):
 
@@ -45,7 +45,6 @@ class HomeScreen(BaseScreen):
         button_update_request = tk.Button(opcoes_frame, text="Editar Requisição Existente",
                                           command=lambda: self.abrir_nova_janela("existente"))
         button_update_request.pack(pady=10)
-
 
     def abrir_nova_janela(self, acao):
         """Abre uma nova janela para criar uma nova requisição."""

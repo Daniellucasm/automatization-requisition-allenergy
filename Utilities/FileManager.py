@@ -129,6 +129,35 @@ class FileManager():
         novo_nome_arquivo = f"{prefixo}-R{nova_revisao}"
         return novo_nome_arquivo
 
+    def obter_menor_revisao(self, caminho_pasta, prefixo):
+        # Expressão regular para capturar o prefixo e a revisão
+        padrao = re.compile(rf"^({prefixo})(?:.*-R(\d+))?")
+        
+        # Variável para armazenar a menor revisão encontrada
+        menor_revisao = float('inf')
+        arquivo_com_menor_revisao = None
+
+        # Percorre todos os arquivos na pasta
+        for arquivo in os.listdir(caminho_pasta):
+            match = padrao.match(arquivo)
+            if match:
+                # Captura o número da revisão (se existir)
+                revisao_atual = match.group(2)
+                
+                if revisao_atual is not None:
+                    revisao_atual = int(revisao_atual)
+                    if revisao_atual < menor_revisao:
+                        menor_revisao = revisao_atual
+                        arquivo_com_menor_revisao = arquivo
+
+        # Verifica se encontrou algum arquivo válido
+        if arquivo_com_menor_revisao is None:
+            return None  # Retorna None se não encontrar nenhum arquivo com o padrão esperado
+
+        # Retorna o nome do arquivo com a menor revisão
+        return arquivo_com_menor_revisao
+
+
     def encontrar_pasta_por_prefixo(self, diretorio_base, prefixo):
         try:
             pastas = [pasta for pasta in os.listdir(diretorio_base) if os.path.isdir(os.path.join(diretorio_base, pasta))]
@@ -143,12 +172,14 @@ class FileManager():
             return None
 
     def criar_pasta_superado(self, caminho_engenharia, caminho_suprimentos):
-        print("Pasta Superado")
-        if self.acao_var.get() == "nova":
-            os.mkdir(caminho_engenharia + "/Superado")
-            os.mkdir(caminho_suprimentos + "/Superado")
-        else:
-            print("Jogar arquivo antigo para a pasta superado Suprimentos/Engenharia")
+        os.mkdir(caminho_engenharia + "/Superado")
+        os.mkdir(caminho_suprimentos + "/Superado")
+
+    def enviar_pasta_superado(self, caminho_engenharia, caminho_suprimentos, caminho_arquivo_engenharia, caminho_arquivo_suprimentos):
+        caminho_engenharia_superado = os.path.join(caminho_engenharia, "Superado")
+        caminho_suprimentos_superado = os.path.join(caminho_suprimentos, "Superado")
+        shutil.move(caminho_arquivo_engenharia, caminho_engenharia_superado)
+        shutil.move(caminho_arquivo_suprimentos, caminho_suprimentos_superado)
 
     def copiar_arquivo(self):
         try:
@@ -196,6 +227,11 @@ class FileManager():
                 self.caminho_arquivo_destino_engenharia = os.path.join(caminho_pasta_existente_engenharia, nome_arquivo_novo)
                 self.caminho_arquivo_destino_suprimentos = os.path.join(caminho_pasta_existente_suprimentos, nome_arquivo_novo)
 
+                arquivo_antigo_engenharia = FileManager.obter_menor_revisao(self, caminho_pasta_existente_engenharia, nome_arquivo_original[:12])
+                arquivo_antigo_engenharia = os.path.join(caminho_pasta_existente_engenharia, arquivo_antigo_engenharia)
+
+                arquivo_antigo_suprimentos = FileManager.obter_menor_revisao(self, caminho_pasta_existente_suprimentos, nome_arquivo_original[:12])
+                arquivo_antigo_suprimentos = os.path.join(caminho_pasta_existente_suprimentos, arquivo_antigo_suprimentos)
                 ExcelHandler.abrir_alterar_arquivo(self, nome_arquivo_novo[:12])
 
 
@@ -212,6 +248,7 @@ class FileManager():
                     shutil.copy(self.caminho_arquivo.get(), self.caminho_arquivo_destino_suprimentos)
                     self.param = 1
                     print(self.caminho_arquivo_destino_engenharia)
+                    FileManager.enviar_pasta_superado(self, caminho_pasta_existente_engenharia, caminho_pasta_existente_suprimentos, arquivo_antigo_engenharia, arquivo_antigo_suprimentos)
                     FileManager.abrir_arquivo(self, self.caminho_arquivo_destino_engenharia)
             else:
                 messagebox.showinfo("Atenção", "Arquivo não foi copiado!")

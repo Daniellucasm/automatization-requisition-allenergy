@@ -1,4 +1,4 @@
-from openpyxl import load_workbook
+from openpyxl import load_workbook # type: ignore
 
 class ExcelHandler():
     def abrir_alterar_arquivo(self, num_requisicao):
