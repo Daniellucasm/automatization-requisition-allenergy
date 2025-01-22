@@ -103,7 +103,7 @@ class HomeScreen(BaseScreen):
         label_projeto = tk.Label(nova_janela, text=f"Selecione a {tipo}:")
         label_projeto.pack(pady=5)
 
-        diretorio = "/Users/daniellucas/Library/Mobile Documents/com~apple~CloudDocs/All Energy/"
+        diretorio = "/Users/daniellucas/Library/Mobile Documents/com~apple~CloudDocs/All Energy/Projetos"
         #"/Users/daniellucas/Library/Mobile Documents/com~apple~CloudDocs/All Energy/" - MAC
         #C:\Users\daniel.murta\All Energy\Apropriação de Horas - Documentos\Testes - Windows
         diretorio = os.path.join(diretorio, self.projeto.get())

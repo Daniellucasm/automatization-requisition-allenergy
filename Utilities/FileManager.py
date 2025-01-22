@@ -184,7 +184,7 @@ class FileManager():
     def copiar_arquivo(self):
         try:
             # Caminho base da pasta "Documents" do usuário
-            path = "/Users/daniellucas/Library/Mobile Documents/com~apple~CloudDocs/All Energy/"
+            path = "/Users/daniellucas/Library/Mobile Documents/com~apple~CloudDocs/All Energy/Projetos"
             #/Users/daniellucas/Library/Mobile Documents/com~apple~CloudDocs/All Energy/
             #C:\\Users\\daniel.murta\\All Energy\\Apropriação de Horas - Documentos\\Testes
             caminho_base = os.path.expanduser(path)
