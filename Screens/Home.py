@@ -46,6 +46,12 @@ class HomeScreen(BaseScreen):
                                           command=lambda: self.abrir_nova_janela("existente"))
         button_update_request.pack(pady=10)
 
+    def format_projetos(self):
+        return {
+            nome.split(" - Documentos")[0] if " - Documentos" in nome else nome: nome
+            for nome in self.projetos
+        }
+
     def abrir_nova_janela(self, acao):
         """Abre uma nova janela para criar uma nova requisição."""
         self.acao_var.set(acao)
@@ -55,11 +61,13 @@ class HomeScreen(BaseScreen):
         nova_janela.geometry("400x300")
         nova_janela.geometry("+{}+{}".format(self.positionRight, self.positionDown))
 
+        self.projetos_mp = self.format_projetos()
+        
         # Combox para listar projetos
         label_projeto = tk.Label(nova_janela, text="Selecione o Projeto:")
         label_projeto.pack(pady=5)
 
-        self.projeto_combobox = ttk.Combobox(nova_janela, values=self.projetos, width=30)
+        self.projeto_combobox = ttk.Combobox(nova_janela, values=list(self.projetos_mp.keys()), width=30)
         self.projeto_combobox.pack(pady=5)
 
         # Frame para os botões de tipo de requisição
@@ -167,8 +175,9 @@ class HomeScreen(BaseScreen):
         salvar_btn.pack(pady=5)
     
     def atualizar_projeto(self, event):
-        self.projeto.set(self.projeto_combobox.get()) 
-
+        valor_selecionado = self.projeto_combobox.get()
+        self.projeto.set(self.projetos_mp.get(valor_selecionado, "Valor não encontrado"))
+    
     def obter_nome_personalizado(self):
         # Abre uma janela de diálogo para o usuário inserir o nome
         nome_personalizado = simpledialog.askstring("Nome da Nova Pasta", "Digite um nome para a nova pasta:")      
